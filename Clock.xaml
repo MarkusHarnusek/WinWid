@@ -9,29 +9,47 @@
         Background="Transparent"
         WindowStyle="None"
         AllowsTransparency="True"
-        BorderThickness="0"
-        ShowInTaskbar="False">
+        ShowInTaskbar="False"
+        Topmost="False"
+        BorderThickness="0">
     
-    <Grid
-        Background="Transparent">
+    <Window.Resources>
+        <Style x:Key="TStyle" TargetType="TextBlock">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="FontSize" Value="100"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="FontFamily" Value="{StaticResource LexendDeca}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Width" Value="70"/>
+        </Style>
+    </Window.Resources>
     
-        <StackPanel
-            HorizontalAlignment="Center">
+    <Grid Background="Transparent">
+        <StackPanel HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <TextBlock x:Name="T0" Style="{StaticResource TStyle}" Text="X"/>
+                <TextBlock x:Name="T1" Style="{StaticResource TStyle}" Text="X"/>
+                <TextBlock x:Name="T2" Style="{StaticResource TStyle}" Text="X"/>
+                <TextBlock x:Name="T3" Style="{StaticResource TStyle}" Text="X"/>
+                <TextBlock x:Name="T4" Style="{StaticResource TStyle}" Text="X"/>
+                <TextBlock x:Name="T5" Style="{StaticResource TStyle}" Text="X"/>
+                <TextBlock x:Name="T6" Style="{StaticResource TStyle}" Text="X"/>
+                <TextBlock x:Name="T7" Style="{StaticResource TStyle}" Text="X"/>
+                <TextBlock x:Name="T8" Style="{StaticResource TStyle}" Text="X"/>
+                <TextBlock x:Name="T9" Style="{StaticResource TStyle}" Text="X"/>
+            </StackPanel>
 
             <TextBlock
-                Background="Transparent"
-                FontSize="100"
-                Text="20:00"
-                Foreground="White"
-                TextAlignment="Center"
-                FontFamily="{StaticResource LexendDeca}"/>
-
-            <TextBlock
+                x:Name="Date"
                 Background="Transparent"
                 FontSize="50"
+                Text="1. January 2025"
                 Foreground="White"
                 TextAlignment="Center"
-                FontFamily="{StaticResource LexendDeca}"/>
+                FontFamily="{StaticResource LexendDeca}"
+                FontWeight="Medium"
+                Typography.NumeralStyle="Normal"/>
         </StackPanel>
     </Grid>
 </Window>

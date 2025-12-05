@@ -12,6 +12,7 @@ namespace WinWid.Config
         public bool Use24H { get; set; } = true;
         public bool ShowSeconds { get; set; } = true;
         public bool ShowDate { get; set; } = true;
+        public double Opacity { get; set; } = 1;
         public string AppDataConfigDir { get; private set; }
 
 #pragma warning disable CS8618
@@ -31,17 +32,25 @@ namespace WinWid.Config
 
             if (File.Exists(path))
             {
-                string json = File.ReadAllText(path);
-                ClockConfig? config = JsonSerializer.Deserialize<ClockConfig>(json);
-
-                if (config != null)
+                try
                 {
-                    WidthRatio = config.WidthRatio;
-                    HeightRatio = config.HeightRatio;
-                    TopOffsetRatio = config.TopOffsetRatio;
-                    Use24H = config.Use24H;
-                    ShowSeconds = config.ShowSeconds;
-                    ShowDate = config.ShowDate;
+                    string json = File.ReadAllText(path);
+                    ClockConfig? config = JsonSerializer.Deserialize<ClockConfig>(json);
+
+                    if (config != null)
+                    {
+                        WidthRatio = config.WidthRatio;
+                        HeightRatio = config.HeightRatio;
+                        TopOffsetRatio = config.TopOffsetRatio;
+                        Use24H = config.Use24H;
+                        ShowSeconds = config.ShowSeconds;
+                        ShowDate = config.ShowDate;
+                        Opacity = config.Opacity;
+                    }
+                } 
+                catch
+                {
+                    Save();
                 }
             }
             else

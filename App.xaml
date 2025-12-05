@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:WinWid"
              StartupUri="MainWindow.xaml">
+    
     <Application.Resources>
         <FontFamily x:Key="LexendDeca">pack://application:,,,/Assetts/Fonts/Lexend_Deca,Montserrat,Roboto/Lexend_Deca/#Lexend Deca</FontFamily>
         <FontFamily x:Key="Montserrat">pack://application:,,,/Assetts/Fonts/Lexend_Deca,Montserrat,Roboto/Montserrat/#Montserrat</FontFamily>

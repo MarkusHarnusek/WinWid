@@ -1,6 +1,8 @@
 ﻿using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
+using System.Windows.Threading;
 
 namespace WinWid
 {
@@ -10,12 +12,174 @@ namespace WinWid
     public partial class Clock : Window
     {
         private Config.ClockConfig config;
+        private DispatcherTimer timer;
+        public List<TextBlock> TextBlocks { get; private set; }
+
+        private const int GWL_EXSTYLE = -20;
+        private const int WS_EX_TOOLWINDOW = 0x00000080;
+        private const int GWLP_HWNDPARENT = -8;
+
+        [DllImport("user32.dll")]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string? lpszWindow);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        private static readonly IntPtr HWND_BOTTOM = new IntPtr(1);
+        private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_NOACTIVATE = 0x0010;
 
         public Clock(Config.ClockConfig config)
         {
             this.config = config;
             InitializeComponent();
             TransformToPos();
+            SourceInitialized += Clock_SourceInitialized;
+            Loaded += Clock_Loaded;
+            InitializeTimer();
+            TextBlocks = new List<TextBlock> { T0, T1, T2, T3, T4, T5, T6, T7, T8, T9 };
+
+            SetUpItems();
+        }
+
+        /// <summary>
+        /// Sets up all of the items according to the config
+        /// </summary>
+        public void SetUpItems()
+        {
+            if (!config.ShowDate)
+            {
+                Date.Visibility = Visibility.Hidden;
+            }
+
+            foreach (TextBlock T in TextBlocks)
+            {
+                T.Opacity = config.Opacity;
+            }
+
+            Date.Opacity = config.Opacity;
+        }
+
+        /// <summary>
+        /// Hides the window from the Alt-Tab switcher and pins it above the desktop
+        /// </summary>
+        private void Clock_SourceInitialized(object? sender, EventArgs e)
+        {
+            var helper = new WindowInteropHelper(this);
+
+            // Hide from Alt-Tab
+            int exStyle = GetWindowLong(helper.Handle, GWL_EXSTYLE);
+            SetWindowLong(helper.Handle, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
+
+            // Pin to desktop layer (above desktop, immune to Win+D)
+            IntPtr desktopHandle = GetDesktopWorkerW();
+            if (desktopHandle != IntPtr.Zero)
+            {
+                SetWindowLongPtr(helper.Handle, GWLP_HWNDPARENT, desktopHandle);
+            }
+        }
+
+        /// <summary>
+        /// Positions the window at the bottom of the z-order
+        /// </summary>
+        private void Clock_Loaded(object? sender, RoutedEventArgs e)
+        {
+            var helper = new WindowInteropHelper(this);
+            SetWindowPos(helper.Handle, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        }
+
+        /// <summary>
+        /// Initializes the timer that updates the clock periodically
+        /// </summary>
+        private void InitializeTimer()
+        {
+            timer = new DispatcherTimer();
+            timer.Interval = TimeSpan.FromSeconds(1); // Update every second
+            timer.Tick += Timer_Tick;
+            timer.Start();
+        }
+
+        /// <summary>
+        /// Called periodically by the timer
+        /// </summary>
+        private void Timer_Tick(object? sender, EventArgs e)
+        {
+            DateTime now = DateTime.Now;
+
+            string timeFormat = config.Use24H
+                ? (config.ShowSeconds ? "HH:mm:ss" : "HH:mm")
+                : (config.ShowSeconds ? "hh:mm:ss tt" : "hh:mm tt");
+
+            string time = now.ToString(timeFormat);
+
+            int i = 0;
+            foreach (TextBlock t in TextBlocks)
+            {
+                if (i < time.Length)
+                {
+                    t.Text = time[i].ToString();
+
+                    if (time[i] == ':')
+                    {
+                        t.Width = 30;
+                    }
+                    else
+                    {
+                        t.Width = 65;
+                    }
+                }
+                else
+                {
+                    t.Visibility = Visibility.Collapsed;
+                }
+               
+                i++;
+            }
+
+
+            Date.Text = now.ToString("D");
+        }
+
+        /// <summary>
+        /// Gets the WorkerW window handle that hosts desktop icons
+        /// </summary>
+        private IntPtr GetDesktopWorkerW()
+        {
+            IntPtr progman = FindWindow("Progman", null);
+            IntPtr workerw = IntPtr.Zero;
+
+            // Find the WorkerW window that's a sibling of Progman
+            IntPtr desktopHandle = FindWindowEx(IntPtr.Zero, IntPtr.Zero, "WorkerW", null);
+            while (desktopHandle != IntPtr.Zero)
+            {
+                IntPtr shellView = FindWindowEx(desktopHandle, IntPtr.Zero, "SHELLDLL_DefView", null);
+                if (shellView != IntPtr.Zero)
+                {
+                    workerw = FindWindowEx(IntPtr.Zero, desktopHandle, "WorkerW", null);
+                    if (workerw != IntPtr.Zero)
+                    {
+                        return workerw;
+                    }
+                    return desktopHandle;
+                }
+                desktopHandle = FindWindowEx(IntPtr.Zero, desktopHandle, "WorkerW", null);
+            }
+
+            return progman;
         }
 
         /// <summary>
@@ -48,8 +212,8 @@ namespace WinWid
             double height = GetCurrentScreenDimensions().Height;
 
             Width = width / config.WidthRatio;
-            Height = height/ config.HeightRatio;
-            Left = ( width - Width ) / 2;
+            Height = height / config.HeightRatio;
+            Left = (width - Width) / 2;
             Top = height / config.TopOffsetRatio;
         }
     }
