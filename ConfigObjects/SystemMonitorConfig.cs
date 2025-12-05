@@ -15,6 +15,7 @@ namespace WinWid.ConfigObjects
 
     public class SystemMonitorConfig
     {
+        public bool Enable { get; set; } = true;
         public SystemMonitorPosition Position { get; set; } = SystemMonitorPosition.BottomLeft;
         public int Margin { get; set; } = 5;
         public bool ShowCPU { get; set; } = true;

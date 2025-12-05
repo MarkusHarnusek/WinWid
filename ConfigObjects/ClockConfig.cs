@@ -6,6 +6,7 @@ namespace WinWid.Config
 {
     public class ClockConfig
     {
+        public bool Enable {  get; set; } = true;
         public int WidthRatio { get; set; } = 3;
         public int HeightRatio { get; set; } = 3;
         public int TopOffsetRatio { get; set; } = 20;
@@ -39,6 +40,7 @@ namespace WinWid.Config
 
                     if (config != null)
                     {
+                        Enable = config.Enable;
                         WidthRatio = config.WidthRatio;
                         HeightRatio = config.HeightRatio;
                         TopOffsetRatio = config.TopOffsetRatio;
