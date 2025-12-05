@@ -1,10 +1,12 @@
 ﻿using System.IO;
+using WinWid.ConfigObjects;
 
 namespace WinWid.Config
 {
     public class Config
     {
         public ClockConfig ClockConfig { get; set; }
+        public SystemMonitorConfig SystemMonitorConfig { get; set; }
         public string AppDataConfigDir { get; private set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinWid", "config");
 
 #pragma warning disable CS8618
@@ -22,11 +24,13 @@ namespace WinWid.Config
             }
 
             ClockConfig = new ClockConfig(AppDataConfigDir);
+            SystemMonitorConfig = new SystemMonitorConfig(AppDataConfigDir);
         }
 
         public void SaveConfig()
         {
             ClockConfig.Save();
+            SystemMonitorConfig.Save();
         }
     }
 }
