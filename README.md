@@ -10,6 +10,7 @@ current date, sized and positioned relative to your primary screen. Everything
 is driven by a small JSON config file.
 
 <img width="440" height="204" alt="image" src="https://github.com/user-attachments/assets/d863cd55-3836-4c57-ac20-abf9fd17121c" />
+
 *Example of usage of WinWid*
 
 ## Requirements
