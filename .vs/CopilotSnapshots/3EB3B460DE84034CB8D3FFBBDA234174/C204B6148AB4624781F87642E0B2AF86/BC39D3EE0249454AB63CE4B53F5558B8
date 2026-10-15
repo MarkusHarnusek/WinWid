@@ -1,0 +1,31 @@
+﻿using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Forms;
+
+namespace WinWid
+{
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        public MainWindow()
+        {
+            InitializeComponent();
+
+            MessageBox.Show();
+        }
+
+        /// <summary>
+        /// Gets the width and height of the screen where this window is currently displayed
+        /// </summary>
+        /// <returns>A tuple containing the screen width and height in pixels</returns>
+        private (double Width, double Height) GetCurrentScreenDimensions()
+        {
+            var windowInteropHelper = new WindowInteropHelper(this);
+            var currentScreen = Screen.FromHandle(windowInteropHelper.Handle);
+
+            return (currentScreen.Bounds.Width, currentScreen.Bounds.Height);
+        }
+    }
+}

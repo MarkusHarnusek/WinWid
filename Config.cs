@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using WinWid.ConfigObjects;
 
 namespace WinWid.Config
 {

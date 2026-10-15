@@ -1,0 +1,63 @@
+﻿using System.IO;
+using System.Windows;
+
+namespace WinWid.Config
+{
+    public class ClockConfig
+    {
+        public int WidthRatio { get; set; } = 3;
+        public int HeightRatio { get; set; } = 3;
+        public int TopOffsetRatio { get; set; } = 20;
+        public bool Use24H { get; set; } = true;
+        public bool ShowSeconds { get; set; } = true;
+        public bool ShowDate { get; set; } = true;
+        public string AppDataConfigDir { get; private set; } // Added public property
+
+        public ClockConfig(string appDataConfigDir)
+        {
+            if (string.IsNullOrWhiteSpace(appDataConfigDir))
+            {
+                throw new ArgumentException("AppDataConfigDir cannot be null or empty.", nameof(appDataConfigDir));
+            }
+
+            AppDataConfigDir = appDataConfigDir;
+            Load();
+        }
+
+        public void Load()
+        {
+            string path = Path.Combine(AppDataConfigDir, "clock.json");
+
+            if (File.Exists(path))
+            {
+                string json = File.ReadAllText(path);
+                ClockConfig? config = System.Text.Json.JsonSerializer.Deserialize<ClockConfig>(json);
+
+                if (config != null)
+                {
+                    WidthRatio = config.WidthRatio;
+                    HeightRatio = config.HeightRatio;
+                    TopOffsetRatio = config.TopOffsetRatio;
+                    Use24H = config.Use24H;
+                    ShowSeconds = config.ShowSeconds;
+                    ShowDate = config.ShowDate;
+                }
+            }
+            else
+            {
+                Save();
+            }
+        }
+
+        public void Save()
+        {
+            string json = System.Text.Json.JsonSerializer.Serialize(this, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            string path = Path.Combine(AppDataConfigDir, "clock.json");
+            File.WriteAllText(path, json);
+        }
+    }
+}

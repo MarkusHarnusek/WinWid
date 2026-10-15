@@ -1,0 +1,547 @@
+﻿using LiveCharts;
+using LiveCharts.Wpf;
+using System.Diagnostics;
+using System.Management;
+using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Interop;
+using System.Windows.Threading;
+
+namespace WinWid
+{
+    /// <summary>
+    /// Interaction logic for SystemMonitor.xaml
+    /// </summary>
+    public partial class SystemMonitor : Window
+    {
+        private PerformanceCounter _cpuCounter;
+        private PerformanceCounter _memAvailableCounter;
+        private PerformanceCounter _diskCounter;
+        private PerformanceCounter _netSentCounter;
+        private PerformanceCounter _netReceivedCounter;
+
+        private SeriesCollection _cpuSeries;
+        private SeriesCollection _memSeries;
+        private SeriesCollection _netSeries;
+        private SeriesCollection _diskSeries;
+
+        private string _networkInterfaceName = "YourNetworkInterfaceName";
+
+        private double _lastHeight;
+        private double _lastWidth;
+
+        private Config.SystemMonitorConfig _config;
+        private DispatcherTimer _refreshTimer;
+
+        List<Border> _chartBorders = new List<Border>();
+        List<CartesianChart> _charts = new List<CartesianChart>();
+
+        private const int GWL_EXSTYLE = -20;
+        private const int WS_EX_TOOLWINDOW = 0x00000080;
+        private const int GWLP_HWNDPARENT = -8;
+
+        [DllImport("user32.dll")]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string? lpszWindow);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        private static readonly IntPtr HWND_BOTTOM = new IntPtr(1);
+        private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_NOACTIVATE = 0x0010;
+
+        private const int MaxDataPoints = 80;
+
+#pragma warning disable CS8618
+        public SystemMonitor(Config.SystemMonitorConfig config)
+#pragma warning restore CS8618
+        {
+            this._config = config;
+            InitializeComponent();
+            TransformToPos();
+            InitCounter();
+            SourceInitialized += Clock_SourceInitialized;
+            Loaded += Clock_Loaded;
+            InitializeCharts();
+            InitializeTimer();
+
+            _chartBorders = [CpuChartBorder, MemChartBorder, NetChartBorder, DiskChartBorder];
+            _charts = [CpuChart, MemChart, NetChart, DiskChart];
+
+            SetUpItems();
+        }
+
+        /// <summary>
+        /// Initializes the data series and associates them with their respective charts for CPU, memory, network, and
+        /// disk metrics.
+        /// </summary>
+        /// <remarks>Call this method before displaying or updating the charts to ensure that each chart
+        /// is properly configured with its initial data series. This method is intended for internal setup and should
+        /// not be called multiple times unless the charts need to be reset.</remarks>
+        private void InitializeCharts()
+        {
+            _cpuSeries = new SeriesCollection
+            {
+                new LineSeries
+                {
+                    Title = "CPU",
+                    Values = new ChartValues<double> { 0 },
+                    LineSmoothness = 100,
+                    Stroke = System.Windows.Media.Brushes.White,
+                    Fill = System.Windows.Media.Brushes.Transparent,
+                    PointGeometry = null
+                }
+            };
+            CpuChart.Series = _cpuSeries;
+            CpuChart.DataTooltip = null;
+            CpuChart.DisableAnimations = true;
+            CpuChart.AxisX.Add(new Axis
+            {
+                MinValue = 0,
+                MaxValue = MaxDataPoints - 1,
+                ShowLabels = false,
+                DisableAnimations = true
+            });
+            CpuChart.AxisY.Add(new Axis
+            {
+                MinValue = 0,
+                MaxValue = 100,
+                ShowLabels = false
+            });
+
+            _memSeries = new SeriesCollection
+            {
+                new LineSeries
+                {
+                    Title = "Memory",
+                    Values = new ChartValues<double> { 0 },
+                    LineSmoothness = 100,
+                    Stroke = System.Windows.Media.Brushes.White,
+                    Fill = System.Windows.Media.Brushes.Transparent,
+                    PointGeometry = null
+                }
+            };
+            MemChart.Series = _memSeries;
+            MemChart.DataTooltip = null;
+            MemChart.DisableAnimations = true;
+            MemChart.AxisX.Add(new Axis
+            {
+                MinValue = 0,
+                MaxValue = MaxDataPoints - 1,
+                ShowLabels = false,
+                DisableAnimations = true
+            });
+            MemChart.AxisY.Add(new Axis
+            {
+                MinValue = 0,
+                MaxValue = 100,
+                ShowLabels = false
+            });
+
+            _netSeries = new SeriesCollection
+            {
+                new LineSeries
+                {
+                    Title = "Network",
+                    Values = new ChartValues<double> { 0 },
+                    LineSmoothness = 100,
+                    Stroke = System.Windows.Media.Brushes.White,
+                    Fill = System.Windows.Media.Brushes.Transparent,
+                    PointGeometry = null
+                }
+            };
+            NetChart.Series = _netSeries;
+            NetChart.DataTooltip = null;
+            NetChart.DisableAnimations = true;
+            NetChart.AxisX.Add(new Axis
+            {
+                MinValue = 0,
+                MaxValue = MaxDataPoints - 1,
+                ShowLabels = false,
+                DisableAnimations = true
+            });
+            NetChart.AxisY.Add(new Axis
+            {
+                MinValue = 0,
+                MaxValue = 100,
+                ShowLabels = false
+            });
+
+            _diskSeries = new SeriesCollection
+            {
+                new LineSeries
+                {
+                    Title = "Disk",
+                    Values = new ChartValues<double> { 0 },
+                    LineSmoothness = 100,
+                    Stroke = System.Windows.Media.Brushes.White,
+                    Fill = System.Windows.Media.Brushes.Transparent,
+                    PointGeometry = null
+                }
+            };
+            DiskChart.Series = _diskSeries;
+            DiskChart.DataTooltip = null;
+            DiskChart.DisableAnimations = true;
+            DiskChart.AxisX.Add(new Axis
+            {
+                MinValue = 0,
+                MaxValue = MaxDataPoints - 1,
+                ShowLabels = false,
+                DisableAnimations = true
+            });
+            DiskChart.AxisY.Add(new Axis
+            {
+                MinValue = 0,
+                MaxValue = 100,
+                ShowLabels = false
+            });
+        }
+
+        /// <summary>
+        /// Sets up all of the items according to the config
+        /// </summary>
+        public void SetUpItems()
+        {
+            if (!_config.ShowCPU) CpuChartBorder.Visibility = Visibility.Collapsed;
+            if (!_config.ShowMemory) MemChartBorder.Visibility = Visibility.Collapsed;
+            if (!_config.ShowNetwork) NetChartBorder.Visibility = Visibility.Collapsed;
+            if (!_config.ShowDisk) DiskChartBorder.Visibility = Visibility.Collapsed;
+
+            foreach (Border b in _chartBorders)
+            {
+                b.Opacity = _config.Opacity;
+            }
+
+            foreach (CartesianChart c in _charts)
+            {
+                c.Opacity = _config.Opacity;
+            }
+        }
+
+        private void InitCounter()
+        {
+            SetNetworkInterfaceName();
+
+            _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+            _memAvailableCounter = new PerformanceCounter("Memory", "Available MBytes");
+            _diskCounter = new PerformanceCounter("PhysicalDisk", "% Disk Time", "_Total");
+            _netSentCounter = new PerformanceCounter("Network Interface", "Bytes Sent/sec", _networkInterfaceName);
+            _netReceivedCounter = new PerformanceCounter("Network Interface", "Bytes Received/sec", _networkInterfaceName);
+
+            _cpuCounter.NextValue();
+            _diskCounter.NextValue();
+            try
+            {
+                _netSentCounter.NextValue();
+                _netReceivedCounter.NextValue();
+            }
+            catch (Exception) { }
+        }
+
+        /// <summary>
+        /// Dispose unused counter to free resources
+        /// </summary>
+        public void Stop()
+        {
+            _cpuCounter.Dispose();
+            _memAvailableCounter.Dispose();
+            _diskCounter.Dispose();
+            _netSentCounter.Dispose();
+            _netReceivedCounter.Dispose();
+        }
+
+        /// <summary>
+        /// Hides the window from the Alt-Tab switcher and pins it above the desktop
+        /// </summary>
+        private void Clock_SourceInitialized(object? sender, EventArgs e)
+        {
+            var helper = new WindowInteropHelper(this);
+
+            int exStyle = GetWindowLong(helper.Handle, GWL_EXSTYLE);
+            SetWindowLong(helper.Handle, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
+
+            IntPtr desktopHandle = GetDesktopWorkerW();
+            if (desktopHandle != IntPtr.Zero)
+            {
+                SetWindowLongPtr(helper.Handle, GWLP_HWNDPARENT, desktopHandle);
+            }
+        }
+
+        /// <summary>
+        /// Positions the window at the bottom of the z-order
+        /// </summary>
+        private void Clock_Loaded(object? sender, RoutedEventArgs e)
+        {
+            var helper = new WindowInteropHelper(this);
+            SetWindowPos(helper.Handle, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                TransformToPos();
+            }), DispatcherPriority.Loaded);
+        }
+
+        /// <summary>
+        /// Initializes the timer that updates the clock periodically
+        /// </summary>
+        private void InitializeTimer()
+        {
+            _refreshTimer = new DispatcherTimer();
+            _refreshTimer.Interval = TimeSpan.FromSeconds(0.05);
+            _refreshTimer.Tick += Timer_Tick;
+            _refreshTimer.Start();
+        }
+
+        /// <summary>
+        /// Called periodically by the timer
+        /// </summary>
+        private void Timer_Tick(object? sender, EventArgs e)
+        {
+            (double currentWidth, double currentHeight) = GetCurrentScreenDimensions();
+
+            if (_lastHeight != currentHeight || _lastWidth != currentWidth)
+            {
+                TransformToPos();
+            }
+
+            _lastHeight = currentHeight;
+            _lastWidth = currentWidth;
+
+            (double cpu, double mem, double net, double disk) currentMetrics = GetCurrentPerformanceMetrics();
+
+
+            _cpuSeries[0].Values.Add(currentMetrics.cpu);
+
+            if (_cpuSeries[0].Values.Count > MaxDataPoints / 30)
+            {
+                var smoothedValue = _cpuSeries[0].Values.Cast<double>()
+                    .TakeLast(MaxDataPoints / 30)
+                    .Average();
+
+                _cpuSeries[0].Values[_cpuSeries[0].Values.Count - 1] = smoothedValue;
+            }
+
+            _memSeries[0].Values.Add(currentMetrics.mem);
+
+            if (_memSeries[0].Values.Count > MaxDataPoints / 30)
+            {
+                var smoothedValue = _memSeries[0].Values.Cast<double>()
+                    .TakeLast(MaxDataPoints / 30)
+                    .Average();
+
+                _memSeries[0].Values[_memSeries[0].Values.Count - 1] = smoothedValue;
+            }
+
+            _netSeries[0].Values.Add(currentMetrics.net);
+
+            if (_netSeries[0].Values.Count > MaxDataPoints / 30)
+            {
+                var smoothedValue = _netSeries[0].Values.Cast<double>()
+                    .TakeLast(MaxDataPoints / 30)
+                    .Average();
+
+                _netSeries[0].Values[_netSeries[0].Values.Count - 1] = smoothedValue;
+            }
+
+            _diskSeries[0].Values.Add(currentMetrics.disk);
+
+            if (_diskSeries[0].Values.Count > MaxDataPoints / 50)
+            {
+                var smoothedValue = _diskSeries[0].Values.Cast<double>()
+                    .TakeLast(MaxDataPoints / 50)
+                    .Average();
+
+                _diskSeries[0].Values[_diskSeries[0].Values.Count - 1] = smoothedValue;
+            }
+
+            if (_cpuSeries[0].Values.Count > MaxDataPoints)
+            {
+                _cpuSeries[0].Values.RemoveAt(0);
+            }
+            if (_memSeries[0].Values.Count > MaxDataPoints)
+            {
+                _memSeries[0].Values.RemoveAt(0);
+            }
+            if (_netSeries[0].Values.Count > MaxDataPoints)
+            {
+                _netSeries[0].Values.RemoveAt(0);
+            }
+            if (_diskSeries[0].Values.Count > MaxDataPoints)
+            {
+                _diskSeries[0].Values.RemoveAt(0);
+            }
+        }
+
+        /// <summary>
+        /// Gets the WorkerW window handle that hosts desktop icons
+        /// </summary>
+        private IntPtr GetDesktopWorkerW()
+        {
+            IntPtr progman = FindWindow("Progman", null);
+            IntPtr workerw = IntPtr.Zero;
+
+            IntPtr desktopHandle = FindWindowEx(IntPtr.Zero, IntPtr.Zero, "WorkerW", null);
+            while (desktopHandle != IntPtr.Zero)
+            {
+                IntPtr shellView = FindWindowEx(desktopHandle, IntPtr.Zero, "SHELLDLL_DefView", null);
+                if (shellView != IntPtr.Zero)
+                {
+                    workerw = FindWindowEx(IntPtr.Zero, desktopHandle, "WorkerW", null);
+                    if (workerw != IntPtr.Zero)
+                    {
+                        return workerw;
+                    }
+                    return desktopHandle;
+                }
+                desktopHandle = FindWindowEx(IntPtr.Zero, desktopHandle, "WorkerW", null);
+            }
+
+            return progman;
+        }
+
+        /// <summary>
+        /// Gets the width and height of the screen where this window is currently displayed
+        /// </summary>
+        /// <returns>A tuple containing the screen width and height in pixels</returns>
+        private (double Width, double Height) GetCurrentScreenDimensions()
+        {
+            return (SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
+        }
+
+        /// <summary>
+        /// Moves the clock window to the desired position
+        /// </summary>
+        private void TransformToPos()
+        {
+            (double width, double height) = GetCurrentScreenDimensions();
+
+            double chartWidth = width / _config.Size;
+            double chartHeight = height / _config.Size;
+
+            foreach (Border b in _chartBorders)
+            {
+                b.Width = chartWidth;
+                b.Height = chartHeight;
+            }
+
+            int visibleCount = 0;
+            if (_config.ShowCPU) visibleCount++;
+            if (_config.ShowMemory) visibleCount++;
+            if (_config.ShowNetwork) visibleCount++;
+            if (_config.ShowDisk) visibleCount++;
+
+            double totalHeight = (chartHeight + 10) * visibleCount;
+            double totalWidth = chartWidth + 10;
+
+            Width = totalWidth;
+            Height = totalHeight;
+
+            switch (_config.Position)
+            {
+                case Config.SystemMonitorPosition.TopLeft:
+                    Top = height / _config.Margin;
+                    Left = width / _config.Margin;
+                    break;
+
+                case Config.SystemMonitorPosition.TopRight:
+                    Top = height / _config.Margin;
+                    Left = width - (width / _config.Margin) - Width;
+                    break;
+
+                case Config.SystemMonitorPosition.BottomLeft:
+                    Top = height - (height / _config.Margin) - Height;
+                    Left = width / _config.Margin;
+                    break;
+
+                case Config.SystemMonitorPosition.BottomRight:
+                    Top = height - (height / _config.Margin) - Height;
+                    Left = width - (width / _config.Margin) - Width;
+                    break;
+            }
+        }
+
+        private (double CPU, double Mem, double Net, double Disk) GetCurrentPerformanceMetrics()
+        {
+            return (GetCPUUsage(), GetMemUsage(), 0, GetDiskUsage());
+        }
+
+        #region GetMetrics
+
+        private double GetCPUUsage()
+        {
+            return _cpuCounter.NextValue();
+        }
+
+        private double GetMemUsage()
+        {
+            long totalMB = GetTotalPhysicalMemoryMB();
+            if (totalMB == 0) return 0;
+            double usedMB = totalMB - _memAvailableCounter.NextValue();
+            return (usedMB / totalMB) * 100;
+        }
+
+        private double GetNetUsage()
+        {
+            double uploadBytesPerSec = _netSentCounter.NextValue();
+            double downloadBytesPerSec = _netReceivedCounter.NextValue();
+            return (uploadBytesPerSec + downloadBytesPerSec) / 2;
+        }
+
+        private double GetDiskUsage()
+        {
+            return _diskCounter.NextValue();
+        }
+
+        private long GetTotalPhysicalMemoryMB()
+        {
+            long total = 0;
+            try
+            {
+                using (var searcher = new ManagementObjectSearcher("SELECT Capacity FROM Win32_PhysicalMemory"))
+                {
+                    foreach (ManagementObject obj in searcher.Get())
+                    {
+                        total += Convert.ToInt64(obj["Capacity"]);
+                    }
+                }
+                return total / (1024 * 1024);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"WMI query failed: {ex.Message}");
+                return 0;
+            }
+        }
+
+        private void SetNetworkInterfaceName()
+        {
+            var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+            var operationalInterface = networkInterfaces
+                .FirstOrDefault(ni => ni.OperationalStatus == OperationalStatus.Up);
+
+            if (operationalInterface != null)
+            {
+                _networkInterfaceName = operationalInterface.Name;
+            }
+        }
+
+        #endregion
+    }
+}

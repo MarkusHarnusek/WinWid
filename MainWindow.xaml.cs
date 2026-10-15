@@ -14,9 +14,20 @@ namespace WinWid
             InitializeComponent();
             Visibility = Visibility.Hidden;
             Config = new Config.Config();
-            Clock clock = new Clock(Config.ClockConfig);
-            clock.Show();
-            clock.Visibility = Visibility.Visible;
+
+            if (Config.ClockConfig.Enable)
+            {
+                Clock clock = new Clock(Config.ClockConfig);
+                clock.Show();
+                clock.Visibility = Visibility.Visible;
+            }
+
+            if (Config.SystemMonitorConfig.Enable)
+            {
+                SystemMonitor systemMonitor = new SystemMonitor(Config.SystemMonitorConfig);
+                systemMonitor.Show();
+                systemMonitor.Visibility = Visibility.Visible;
+            }
         }
     }
 }

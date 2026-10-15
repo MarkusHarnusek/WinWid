@@ -1,0 +1,147 @@
+﻿using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Interop;
+
+namespace WinWid
+{
+    /// <summary>
+    /// Interaction logic for Clock.xaml
+    /// </summary>
+    public partial class Clock : Window
+    {
+        private Config.ClockConfig config;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string? lpszWindow);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        private static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
+
+        private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+        private const int GWL_EXSTYLE = -20;
+        private const int WS_EX_TOOLWINDOW = 0x00000080;
+        private const int WS_EX_APPWINDOW = 0x00040000;
+        private static readonly IntPtr HWND_BOTTOM = new IntPtr(1);
+        private static readonly IntPtr HWND_TOP = new IntPtr(0);
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_NOACTIVATE = 0x0010;
+        private const uint SWP_SHOWWINDOW = 0x0040;
+        private const uint WM_SPAWN_WORKER = 0x052C;
+
+        private static IntPtr workerw = IntPtr.Zero;
+
+        public Clock(Config.ClockConfig config)
+        {
+            this.config = config;
+            InitializeComponent();
+            TransformToPos();
+            SourceInitialized += Clock_SourceInitialized;
+        }
+
+        private void Clock_SourceInitialized(object? sender, EventArgs e)
+        {
+            HideFromAltTab();
+            SetAsDesktopChild();
+        }
+
+        private void HideFromAltTab()
+        {
+            var helper = new WindowInteropHelper(this);
+            int exStyle = GetWindowLong(helper.Handle, GWL_EXSTYLE);
+            exStyle |= WS_EX_TOOLWINDOW;
+            exStyle &= ~WS_EX_APPWINDOW;
+            SetWindowLong(helper.Handle, GWL_EXSTYLE, exStyle);
+        }
+
+        private void SetAsDesktopChild()
+        {
+            var helper = new WindowInteropHelper(this);
+            IntPtr progman = FindWindow("Progman", null);
+
+            // Send message to Progman to spawn a WorkerW window
+            SendMessage(progman, WM_SPAWN_WORKER, IntPtr.Zero, IntPtr.Zero);
+
+            // Find the WorkerW window that is between SHELLDLL_DefView and the next WorkerW
+            workerw = IntPtr.Zero;
+            EnumWindows((tophandle, topparamhandle) =>
+            {
+                IntPtr shelldll = FindWindowEx(tophandle, IntPtr.Zero, "SHELLDLL_DefView", null);
+
+                if (shelldll != IntPtr.Zero)
+                {
+                    workerw = FindWindowEx(IntPtr.Zero, tophandle, "WorkerW", null);
+                }
+
+                return true;
+            }, IntPtr.Zero);
+
+            if (workerw != IntPtr.Zero)
+            {
+                SetParent(helper.Handle, workerw);
+                // Position window on top within its parent
+                SetWindowPos(helper.Handle, HWND_TOP, (int)Left, (int)Top, (int)Width, (int)Height, SWP_SHOWWINDOW);
+            }
+            else if (progman != IntPtr.Zero)
+            {
+                SetParent(helper.Handle, progman);
+                // Position window on top within its parent
+                SetWindowPos(helper.Handle, HWND_TOP, (int)Left, (int)Top, (int)Width, (int)Height, SWP_SHOWWINDOW);
+            }
+        }
+
+        /// <summary>
+        /// Gets the width and height of the screen where this window is currently displayed
+        /// </summary>
+        /// <returns>A tuple containing the screen width and height in pixels</returns>
+        private (double Width, double Height) GetCurrentScreenDimensions()
+        {
+            var source = PresentationSource.FromVisual(this);
+            if (source?.CompositionTarget == null)
+            {
+                return (SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
+            }
+
+            var transformToDevice = source.CompositionTarget.TransformToDevice;
+            var screenBounds = SystemParameters.WorkArea;
+
+            double screenWidth = screenBounds.Width * transformToDevice.M11;
+            double screenHeight = screenBounds.Height * transformToDevice.M22;
+
+            return (screenWidth, screenHeight);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private void TransformToPos()
+        {
+            double width = GetCurrentScreenDimensions().Width;
+            double height = GetCurrentScreenDimensions().Height;
+
+            Width = width / config.WidthRatio;
+            Height = height/ config.HeightRatio;
+            Left = ( width - Width ) / 2;
+            Top = height / config.TopOffsetRatio;
+        }
+    }
+}

@@ -1,0 +1,8 @@
+{
+  "WidthRatio": 3,
+  "HeightRatio": 3,
+  "TopOffsetRatio": 20,
+  "Use24H": true,
+  "ShowSeconds": true,
+  "ShowDate": true
+}

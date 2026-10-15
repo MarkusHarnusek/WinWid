@@ -1,0 +1,45 @@
+﻿<Window x:Class="WinWid.Clock"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WinWid"
+        mc:Ignorable="d"
+        Title="Clock" Height="450" Width="800"
+        Background="Transparent"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ShowInTaskbar="False"
+        Topmost="False"
+        BorderThickness="0">
+    
+    <Grid
+        Background="Transparent">
+    
+        <StackPanel
+            HorizontalAlignment="Center">
+
+            <TextBlock
+                x:Name="Time"
+                Background="Transparent"
+                FontSize="100"
+                Text="20:00"
+                Foreground="White"
+                TextAlignment="Center"
+                FontFamily="{StaticResource LexendDeca}"
+                FontWeight="SemiBold"
+                Typography.NumeralStyle="Tabulat"/>
+
+            <TextBlock
+                x:Name="Date"
+                Background="Transparent"
+                FontSize="50"
+                Text="1. January 2025"
+                Foreground="White"
+                TextAlignment="Center"
+                FontFamily="{StaticResource LexendDeca}"
+                FontWeight="Medium"
+                Typography.NumeralStyle="Tabular"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,22 @@
+﻿namespace WinWid.Config
+{
+    public class Config
+    {
+        public Config() 
+        {
+            LoadConfig();
+        }
+
+        public ClockConfig ClockConfig;
+
+        public void LoadConfig()
+        {
+
+        }
+
+        public void SaveConfig()
+        {
+
+        }
+    }
+}

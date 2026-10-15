@@ -13,6 +13,10 @@ namespace WinWid
     {
         private Config.ClockConfig config;
         private DispatcherTimer timer;
+
+        private double lastWidth;
+        private double lastHeight; 
+
         public List<TextBlock> TextBlocks { get; private set; }
 
         private const int GWL_EXSTYLE = -20;
@@ -43,7 +47,9 @@ namespace WinWid
         private const uint SWP_NOMOVE = 0x0002;
         private const uint SWP_NOACTIVATE = 0x0010;
 
+#pragma warning disable CS8618
         public Clock(Config.ClockConfig config)
+#pragma warning restore CS8618
         {
             this.config = config;
             InitializeComponent();
@@ -51,7 +57,7 @@ namespace WinWid
             SourceInitialized += Clock_SourceInitialized;
             Loaded += Clock_Loaded;
             InitializeTimer();
-            TextBlocks = new List<TextBlock> { T0, T1, T2, T3, T4, T5, T6, T7, T8, T9 };
+            TextBlocks = new List<TextBlock> { T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10 };
 
             SetUpItems();
         }
@@ -118,6 +124,16 @@ namespace WinWid
         /// </summary>
         private void Timer_Tick(object? sender, EventArgs e)
         {
+            (double currentWidth, double currentHeight) = GetCurrentScreenDimensions();
+
+            if (lastHeight != currentHeight || lastWidth != currentWidth)
+            {
+                TransformToPos();
+            }
+
+            lastHeight = currentHeight;
+            lastWidth = currentWidth;
+
             DateTime now = DateTime.Now;
 
             string timeFormat = config.Use24H
@@ -131,15 +147,24 @@ namespace WinWid
             {
                 if (i < time.Length)
                 {
+                    t.Visibility = Visibility.Visible;
                     t.Text = time[i].ToString();
 
                     if (time[i] == ':')
                     {
-                        t.Width = 30;
+                        t.Width = 20;
+                    }
+                    else if (time[i] == ' ')
+                    {
+                        t.Width = 15;
+                    }
+                    else if (time[i] < '9' && time[i] > '0')
+                    {
+                        t.Width = 50;
                     }
                     else
                     {
-                        t.Width = 65;
+                        t.Width = 60;
                     }
                 }
                 else
@@ -150,8 +175,10 @@ namespace WinWid
                 i++;
             }
 
-
             Date.Text = now.ToString("D");
+            
+            UpdateLayout();
+            Left = (currentWidth - ActualWidth) / 2;
         }
 
         /// <summary>
@@ -164,7 +191,6 @@ namespace WinWid
 
             // Find the WorkerW window that's a sibling of Progman
             IntPtr desktopHandle = FindWindowEx(IntPtr.Zero, IntPtr.Zero, "WorkerW", null);
-            while (desktopHandle != IntPtr.Zero)
             {
                 IntPtr shellView = FindWindowEx(desktopHandle, IntPtr.Zero, "SHELLDLL_DefView", null);
                 if (shellView != IntPtr.Zero)
@@ -184,23 +210,10 @@ namespace WinWid
 
         /// <summary>
         /// Gets the width and height of the screen where this window is currently displayed
-        /// </summary>
-        /// <returns>A tuple containing the screen width and height in pixels</returns>
+        /// /// <returns>A tuple containing the screen width and height in pixels</returns>
         private (double Width, double Height) GetCurrentScreenDimensions()
         {
-            var source = PresentationSource.FromVisual(this);
-            if (source?.CompositionTarget == null)
-            {
-                return (SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
-            }
-
-            var transformToDevice = source.CompositionTarget.TransformToDevice;
-            var screenBounds = SystemParameters.WorkArea;
-
-            double screenWidth = screenBounds.Width * transformToDevice.M11;
-            double screenHeight = screenBounds.Height * transformToDevice.M22;
-
-            return (screenWidth, screenHeight);
+            return (SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
         }
 
         /// <summary>
@@ -208,12 +221,14 @@ namespace WinWid
         /// </summary>
         private void TransformToPos()
         {
-            double width = GetCurrentScreenDimensions().Width;
-            double height = GetCurrentScreenDimensions().Height;
+            (double width, double height) = GetCurrentScreenDimensions();
 
-            Width = width / config.WidthRatio;
+            SizeToContent = SizeToContent.Width;
             Height = height / config.HeightRatio;
-            Left = (width - Width) / 2;
+            
+            UpdateLayout();
+            
+            Left = (width - ActualWidth) / 2;
             Top = height / config.TopOffsetRatio;
         }
     }

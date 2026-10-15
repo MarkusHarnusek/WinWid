@@ -1,0 +1,76 @@
+﻿using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Interop;
+
+namespace WinWid
+{
+    /// <summary>
+    /// Interaction logic for Clock.xaml
+    /// </summary>
+    public partial class Clock : Window
+    {
+        private Config.ClockConfig config;
+
+        private const int GWL_EXSTYLE = -20;
+        private const int WS_EX_TOOLWINDOW = 0x00000080;
+
+        [DllImport("user32.dll")]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        public Clock(Config.ClockConfig config)
+        {
+            this.config = config;
+            InitializeComponent();
+            TransformToPos();
+            HideFromAltTab();
+        }
+
+        /// <summary>
+        /// Hides the window from the Alt-Tab switcher
+        /// </summary>
+        private void HideFromAltTab()
+        {
+            var helper = new WindowInteropHelper(this);
+            int exStyle = GetWindowLong(helper.Handle, GWL_EXSTYLE);
+            SetWindowLong(helper.Handle, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
+        }
+
+        /// <summary>
+        /// Gets the width and height of the screen where this window is currently displayed
+        /// </summary>
+        /// <returns>A tuple containing the screen width and height in pixels</returns>
+        private (double Width, double Height) GetCurrentScreenDimensions()
+        {
+            var source = PresentationSource.FromVisual(this);
+            if (source?.CompositionTarget == null)
+            {
+                return (SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
+            }
+
+            var transformToDevice = source.CompositionTarget.TransformToDevice;
+            var screenBounds = SystemParameters.WorkArea;
+
+            double screenWidth = screenBounds.Width * transformToDevice.M11;
+            double screenHeight = screenBounds.Height * transformToDevice.M22;
+
+            return (screenWidth, screenHeight);
+        }
+
+        /// <summary>
+        /// Moves the clock window to the desired position
+        /// </summary>
+        private void TransformToPos()
+        {
+            double width = GetCurrentScreenDimensions().Width;
+            double height = GetCurrentScreenDimensions().Height;
+
+            Width = width / config.WidthRatio;
+            Height = height/ config.HeightRatio;
+            Left = ( width - Width ) / 2;
+            Top = height / config.TopOffsetRatio;
+        }
+    }
+}

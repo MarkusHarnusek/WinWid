@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WinWid"
         mc:Ignorable="d"
-        Title="Clock" Height="450" Width="800"
+        Title="Clock"
+        SizeToContent="WidthAndHeight"
         Background="Transparent"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -14,9 +15,11 @@
         BorderThickness="0">
     
     <Window.Resources>
+        
         <Style x:Key="TStyle" TargetType="TextBlock">
+            
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="FontSize" Value="100"/>
+            <Setter Property="FontSize" Value="70"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="TextAlignment" Value="Center"/>
             <Setter Property="FontFamily" Value="{StaticResource LexendDeca}"/>
@@ -25,19 +28,27 @@
         </Style>
     </Window.Resources>
     
-    <Grid Background="Transparent">
-        <StackPanel HorizontalAlignment="Center">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <TextBlock x:Name="T0" Style="{StaticResource TStyle}" Text="X"/>
-                <TextBlock x:Name="T1" Style="{StaticResource TStyle}" Text="X"/>
-                <TextBlock x:Name="T2" Style="{StaticResource TStyle}" Text="X"/>
-                <TextBlock x:Name="T3" Style="{StaticResource TStyle}" Text="X"/>
-                <TextBlock x:Name="T4" Style="{StaticResource TStyle}" Text="X"/>
-                <TextBlock x:Name="T5" Style="{StaticResource TStyle}" Text="X"/>
-                <TextBlock x:Name="T6" Style="{StaticResource TStyle}" Text="X"/>
-                <TextBlock x:Name="T7" Style="{StaticResource TStyle}" Text="X"/>
-                <TextBlock x:Name="T8" Style="{StaticResource TStyle}" Text="X"/>
-                <TextBlock x:Name="T9" Style="{StaticResource TStyle}" Text="X"/>
+    <Grid 
+        Background="Transparent">
+        
+        <StackPanel
+            HorizontalAlignment="Center">
+            
+            <StackPanel 
+                Orientation="Horizontal"
+                HorizontalAlignment="Center">
+                
+                <TextBlock x:Name="T0" Style="{StaticResource TStyle}" Text="0"/>
+                <TextBlock x:Name="T1" Style="{StaticResource TStyle}" Text="0"/>
+                <TextBlock x:Name="T2" Style="{StaticResource TStyle}" Text=":"/>
+                <TextBlock x:Name="T3" Style="{StaticResource TStyle}" Text="0"/>
+                <TextBlock x:Name="T4" Style="{StaticResource TStyle}" Text="0"/>
+                <TextBlock x:Name="T5" Style="{StaticResource TStyle}" Text=":"/>
+                <TextBlock x:Name="T6" Style="{StaticResource TStyle}" Text="0"/>
+                <TextBlock x:Name="T7" Style="{StaticResource TStyle}" Text="0"/>
+                <TextBlock x:Name="T8" Style="{StaticResource TStyle}" Text=" "/>
+                <TextBlock x:Name="T9" Style="{StaticResource TStyle}" Text="A"/>
+                <TextBlock x:Name="T10" Style="{StaticResource TStyle}" Text="M"/>
             </StackPanel>
 
             <TextBlock

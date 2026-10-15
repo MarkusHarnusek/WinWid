@@ -1,0 +1,288 @@
+﻿<Window x:Class="WinWid.SystemMonitor"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WinWid"
+        xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+        mc:Ignorable="d"
+        Title="Clock"
+        Background="Transparent"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ShowInTaskbar="False"
+        Topmost="False"
+        BorderThickness="0"
+        VerticalAlignment="Top"
+        HorizontalAlignment="Left">
+
+    <Window.Resources>
+        <Style x:Key="TStyle" TargetType="TextBlock">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="FontSize" Value="100"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="FontFamily" Value="{StaticResource LexendDeca}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Width" Value="70"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        
+        <StackPanel>
+
+            <!-- CPU Usage Chart -->
+            <Border 
+                x:Name="CpuChartBorder"
+                BorderBrush="White"
+                BorderThickness="0"
+                CornerRadius="8" 
+                Margin="5">
+                
+                <Grid>
+                    
+                    <Grid.RowDefinitions>
+                        
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock 
+                        Text="CPU" 
+                        Grid.Row="0" 
+                        Foreground="White" 
+                        FontSize="16" 
+                        FontWeight="SemiBold"
+                        Margin="10,5"
+                        TextAlignment="Center"/>
+                    
+                    <lvc:CartesianChart
+                        Grid.Row="1"
+                        x:Name="CpuChart" 
+                        Margin="5"
+                        Background="Transparent">
+                        
+                        <lvc:CartesianChart.AxisX>
+                            
+                            <lvc:Axis 
+                                ShowLabels="False">
+                                
+                                <lvc:Axis.Separator>
+                                    
+                                    <lvc:Separator
+                                        StrokeThickness="0"/>
+                                </lvc:Axis.Separator>
+                            </lvc:Axis>
+                        </lvc:CartesianChart.AxisX>
+                        
+                        <lvc:CartesianChart.AxisY>
+                            
+                            <lvc:Axis 
+                                MinValue="0"
+                                MaxValue="100" 
+                                Foreground="White">
+                                
+                                <lvc:Axis.Separator>
+                                    
+                                    <lvc:Separator 
+                                        Stroke="#40FFFFFF" 
+                                        StrokeThickness="1"/>
+                                </lvc:Axis.Separator>
+                            </lvc:Axis>
+                        </lvc:CartesianChart.AxisY>
+                    </lvc:CartesianChart>
+                </Grid>
+            </Border>
+
+            <!-- Memory Usage Chart -->
+            <Border 
+                x:Name="MemChartBorder"
+                BorderBrush="White"
+                BorderThickness="0"
+                CornerRadius="8" 
+                Margin="5">
+
+                <Grid>
+
+                    <Grid.RowDefinitions>
+
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock 
+                        Text="Memory" 
+                        Grid.Row="0" 
+                        Foreground="White" 
+                        FontSize="16" 
+                        FontWeight="SemiBold" 
+                        Margin="10,5"
+                        TextAlignment="Center"/>
+
+                    <lvc:CartesianChart
+                        Grid.Row="1"
+                        x:Name="MemChart" 
+                        Margin="5"
+                        Background="Transparent">
+
+                        <lvc:CartesianChart.AxisX>
+
+                            <lvc:Axis 
+                                ShowLabels="False">
+
+                                <lvc:Axis.Separator>
+
+                                    <lvc:Separator
+                                        StrokeThickness="0"/>
+                                </lvc:Axis.Separator>
+                            </lvc:Axis>
+                        </lvc:CartesianChart.AxisX>
+
+                        <lvc:CartesianChart.AxisY>
+
+                            <lvc:Axis 
+                                MinValue="0"
+                                MaxValue="100" 
+                                Foreground="White">
+
+                                <lvc:Axis.Separator>
+
+                                    <lvc:Separator 
+                                        Stroke="#40FFFFFF" 
+                                        StrokeThickness="1"/>
+                                </lvc:Axis.Separator>
+                            </lvc:Axis>
+                        </lvc:CartesianChart.AxisY>
+                    </lvc:CartesianChart>
+                </Grid>
+            </Border>
+
+            <!-- Network Usage Chart -->
+            <Border 
+                x:Name="NetChartBorder"
+                BorderBrush="White"
+                BorderThickness="0"
+                CornerRadius="8" 
+                Margin="5">
+
+                <Grid>
+
+                    <Grid.RowDefinitions>
+
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock 
+                        Text="Network" 
+                        Grid.Row="0" 
+                        Foreground="White" 
+                        FontSize="16" 
+                        FontWeight="SemiBold" 
+                        Margin="10,5"
+                        TextAlignment="Center"/>
+
+                    <lvc:CartesianChart
+                        Grid.Row="1"
+                        x:Name="NetChart" 
+                        Margin="5"
+                        Background="Transparent">
+
+                        <lvc:CartesianChart.AxisX>
+
+                            <lvc:Axis 
+                                ShowLabels="False">
+
+                                <lvc:Axis.Separator>
+
+                                    <lvc:Separator
+                                        StrokeThickness="0"/>
+                                </lvc:Axis.Separator>
+                            </lvc:Axis>
+                        </lvc:CartesianChart.AxisX>
+
+                        <lvc:CartesianChart.AxisY>
+
+                            <lvc:Axis 
+                                MinValue="0"
+                                MaxValue="100" 
+                                Foreground="White">
+
+                                <lvc:Axis.Separator>
+
+                                    <lvc:Separator 
+                                        Stroke="#40FFFFFF" 
+                                        StrokeThickness="1"/>
+                                </lvc:Axis.Separator>
+                            </lvc:Axis>
+                        </lvc:CartesianChart.AxisY>
+                    </lvc:CartesianChart>
+                </Grid>
+            </Border>
+
+            <!-- Disk Usage Chart -->
+            <Border 
+                x:Name="DiskChartBorder"
+                BorderBrush="White"
+                BorderThickness="0"
+                CornerRadius="8" 
+                Margin="5">
+
+                <Grid>
+
+                    <Grid.RowDefinitions>
+
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock 
+                        Text="Disk" 
+                        Grid.Row="0" 
+                        Foreground="White" 
+                        FontSize="16" 
+                        FontWeight="SemiBold" 
+                        Margin="10,5"
+                        TextAlignment="Center"/>
+
+                    <lvc:CartesianChart
+                        Grid.Row="1"
+                        x:Name="DiskChart" 
+                        Margin="5"
+                        Background="Transparent">
+
+                        <lvc:CartesianChart.AxisX>
+
+                            <lvc:Axis 
+                                ShowLabels="False">
+
+                                <lvc:Axis.Separator>
+
+                                    <lvc:Separator
+                                        StrokeThickness="0"/>
+                                </lvc:Axis.Separator>
+                            </lvc:Axis>
+                        </lvc:CartesianChart.AxisX>
+
+                        <lvc:CartesianChart.AxisY>
+
+                            <lvc:Axis 
+                                MinValue="0"
+                                MaxValue="100" 
+                                Foreground="White">
+
+                                <lvc:Axis.Separator>
+
+                                    <lvc:Separator 
+                                        Stroke="#40FFFFFF" 
+                                        StrokeThickness="1"/>
+                                </lvc:Axis.Separator>
+                            </lvc:Axis>
+                        </lvc:CartesianChart.AxisY>
+                    </lvc:CartesianChart>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </Grid>
+</Window>

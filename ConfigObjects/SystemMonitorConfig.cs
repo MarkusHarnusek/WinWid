@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using WinWid.Config;
 
-namespace WinWid.ConfigObjects
+namespace WinWid.Config
 {
     public enum SystemMonitorPosition
     {
@@ -17,7 +17,8 @@ namespace WinWid.ConfigObjects
     {
         public bool Enable { get; set; } = true;
         public SystemMonitorPosition Position { get; set; } = SystemMonitorPosition.BottomLeft;
-        public int Margin { get; set; } = 5;
+        public int Margin { get; set; } = 50;
+        public int Size { get; set; } = 10;
         public bool ShowCPU { get; set; } = true;
         public bool ShowMemory { get; set; } = true;
         public bool ShowNetwork { get; set; } = true;
@@ -51,6 +52,7 @@ namespace WinWid.ConfigObjects
                     {
                         Position = config.Position;
                         Margin = config.Margin;
+                        Size = config.Size;
                         ShowCPU = config.ShowCPU;
                         ShowMemory = config.ShowMemory;
                         ShowNetwork = config.ShowNetwork;

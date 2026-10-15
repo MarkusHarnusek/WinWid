@@ -1,0 +1,21 @@
+﻿using System.Windows;
+
+namespace WinWid
+{
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        public Config.Config MainConfig { get; set; }
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            Clock clock = new Clock();
+            clock.Show();
+            clock.Visibility = Visibility.Visible;
+            Visibility = Visibility.Hidden;
+        }
+    }
+}
