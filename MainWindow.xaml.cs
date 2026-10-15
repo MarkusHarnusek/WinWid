@@ -21,13 +21,6 @@ namespace WinWid
                 clock.Show();
                 clock.Visibility = Visibility.Visible;
             }
-
-            if (Config.SystemMonitorConfig.Enable)
-            {
-                SystemMonitor systemMonitor = new SystemMonitor(Config.SystemMonitorConfig);
-                systemMonitor.Show();
-                systemMonitor.Visibility = Visibility.Visible;
-            }
         }
     }
 }
